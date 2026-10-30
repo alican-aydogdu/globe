@@ -23,6 +23,7 @@ TMP="$(mktemp -d)"
 cp -a dist/. "$TMP"/
 cd "$TMP"
 git init -q -b gh-pages
+touch .nojekyll
 git add -A
 git -c user.name="Ali Can AYDOGDU" -c user.email="alican.aydogdu@treves-group.com" \
   commit -qm "${1:-güncelleme}"
