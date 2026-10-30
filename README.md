@@ -1,44 +1,38 @@
-# Dünya — şehirlere kadar
+# Dünya Pazarı
 
-three.js ile çizilmiş, yakınlaştıkça yüzeye inen interaktif dünya.
-Statik site; `alican-aydogdu.github.io/globe/` altında yayınlanıyor.
+Sembolik dünya haritası + ikinci el pazaryeri. three.js ile çizilen vektör küre;
+her ülke kendi dolgusu ve sınırıyla, şehirler ilan sayısına göre büyüyen işaretlerle.
 
-**Adres:** https://alican-aydogdu.github.io/globe/
-
-## Durum
-
-- [x] Adım 1 — Erişilebilir site + dünya (küre, gece/gündüz, atmosfer, yıldızlar, zoom)
-- [ ] Adım 2 — Şehir işaretleri + şehre uçuş
-- [ ] Adım 3 — Sokak/uydu ölçeğinde döşeme (tile) yükleme
+- Canlı: https://alican-aydogdu.github.io/globe/
+- Depo: https://github.com/alican-aydogdu/globe (CV sitesinden ayrı)
 
 ## Yapı
 
-- `src/main.js` — sahne, kamera, OrbitControls, HUD, koordinat okuma, döngü
-- `src/dunya.js` — küre shader'ı (gündüz/gece/topoloji), atmosfer, yıldız alanı
-- `src/style.css` — HUD ve perde
-- `public/textures/` — NASA Blue Marble (gündüz), city lights (gece), topoloji
+```
+index.html            HUD, arama kutusu, ilan kartı
+src/main.js           sahne, kamera, hover, arama, kart
+src/sembol.js         ülke/şehir geometrisi, kimlik haritası (hover için raster)
+src/pazaryeri.js      ilan noktaları (shader) + ekran uzayı isabet testi
+src/ilanlar.js        kurgusal ilan/satıcı üreteci (deterministik)
+public/veri/          Natural Earth GeoJSON + üretilmiş ulkeler.json / sehirler.json
+tools/veri_hazirla.py GeoJSON -> JSON (sadeleştirme, Türkçe adlar)
+```
 
 ## Komutlar
 
-```bash
-npm run dev      # http://127.0.0.1:5199 (base=/globe/ olduğu için /globe/ altında açılır)
-npm run build    # dist/
-./deploy.sh "mesaj"   # derle + GitHub Pages'e gönder
+```
+npm install
+npm run dev        # 127.0.0.1:5199
+npm run build      # dist/
+./deploy.sh "mesaj"  # derler, gh-pages dalına gönderir
 ```
 
-## Kontroller
+## Yayın
 
-Konsolda `window.__kure` açık: `kamera`, `kontroller`, `dunya`,
-`koordinatVektor(38.5, 33.5)` ve `ekranKesisme(x, y)`.
+Kaynak kod `main` dalında, yayın çıktısı `gh-pages` dalında (`.nojekyll` ile).
+Pages kaynağı: `gh-pages` / kök. Vite `base: "/globe/"`.
 
-- Ekran merkezindeki koordinat `ekranKesisme(innerWidth/2, innerHeight/2)` ile okunur.
-- Sahra (23K 12D) merkezdeyken piksel rengi dokudaki kum rengine eşit çıkıyor
-  (204,175,124 ≈ 207,170,118) — koordinat ↔ doku eşleşmesi doğrulandı.
+## Not
 
-## Notlar
-
-- Kamera en yakın 1.045R'ye inebiliyor (yüzeyden ~285 km); şehir ölçeği için
-  Adım 3'te döşeme katmanı gerekiyor, tek 4K doku bu mesafede bulanıklaşıyor.
-- `prefers-reduced-motion` açıksa otomatik dönüş kapalı.
-- Başsız (headless) tarayıcıda `requestAnimationFrame` duruyor; ekran görüntüsü
-  alırken kare elle çizilmeli: `__kure.renderci.render(__kure.sahne, __kure.kamera)`.
+İlanlar, satıcılar ve fiyatlar **tamamen kurgusaldır** — demo amaçlı üretilir
+(`src/ilanlar.js`, sabit tohum). Gerçek pazaryeri verisi yoktur.
