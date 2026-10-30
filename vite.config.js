@@ -4,7 +4,7 @@ import { defineConfig } from "vite";
 export default defineConfig({
   base: "/globe/",
   build: {
-    outDir: "docs",
+    outDir: "dist",
     assetsInlineLimit: 0,
     chunkSizeWarningLimit: 900,
   },
