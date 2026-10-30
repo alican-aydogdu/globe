@@ -1,10 +1,10 @@
 import { defineConfig } from "vite";
 
-// Site, alican-aydogdu.github.io deposunun /globe/ alt yolunda yayınlanıyor.
+// Site kendi deposunda (alican-aydogdu/globe) yayınlanıyor: kullanıcı sitesinin /globe/ alt yolu.
 export default defineConfig({
   base: "/globe/",
   build: {
-    outDir: "dist",
+    outDir: "docs",
     assetsInlineLimit: 0,
     chunkSizeWarningLimit: 900,
   },

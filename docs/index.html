@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="tr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#04060b" />
+    <meta name="kaynak" content="globe-repo" />
+    <title>Dünya Pazarı — ikinci el, yakınında</title>
+    <meta
+      name="description"
+      content="İkinci el pazaryeri: haritada şehir şehir ilanlar. Ara, yakınlaş, fiyatı gör."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Archivo:wght@500;600&display=swap"
+      rel="stylesheet"
+    />
+    <script type="module" crossorigin src="/globe/assets/index-oWGhN3n0.js"></script>
+    <link rel="stylesheet" crossorigin href="/globe/assets/index-4sKxFgTC.css">
+  </head>
+  <body>
+    <div id="sahne" aria-hidden="true"></div>
+
+    <div class="hud hud--ust">
+      <div class="baslik">
+        <span class="etiket">İKİNCİ EL PAZARYERİ · v0.3</span>
+        <h1>Dünya Pazarı</h1>
+      </div>
+      <form class="arama" id="aramaForm" role="search">
+        <input
+          id="arama"
+          type="search"
+          name="q"
+          placeholder="ne arıyorsun? bisiklet, kamera, koltuk…"
+          autocomplete="off"
+          spellcheck="false"
+          aria-label="İlan ara"
+        />
+        <span class="arama-sayi" id="aramaSayi">—</span>
+      </form>
+      <div class="durum" id="durum" role="status" aria-live="polite">yükleniyor</div>
+    </div>
+
+    <div class="hud hud--alt">
+      <p class="ipucu" id="ipucu">sürükle: döndür · tekerlek: yakınlaş · üzerine gel: isim</p>
+      <p class="koordinat" id="koordinat">—</p>
+      <p class="pazar-not" id="pazarNot">—</p>
+    </div>
+
+    <div class="ilan-kart" id="ilanKart" hidden aria-live="polite">
+      <header>
+        <span class="kart-sehir" id="kartSehir"></span>
+        <span class="kart-adet" id="kartAdet"></span>
+        <button class="kart-kapat" id="kartKapat" type="button" aria-label="kapat">×</button>
+      </header>
+      <ul class="kart-liste" id="kartListe"></ul>
+      <footer class="kart-alt" id="kartAlt"></footer>
+    </div>
+
+    <div class="ipucu-kutu" id="ipucuKutu" role="tooltip" hidden>
+      <span class="ipucu-tur" id="ipucuTur"></span>
+      <span class="ipucu-ad" id="ipucuAd"></span>
+      <span class="ipucu-alt" id="ipucuAlt"></span>
+    </div>
+
+    <div class="perde" id="perde">
+      <div class="perde-ic">
+        <div class="ilerleme"><span id="cubuk"></span></div>
+        <p class="perde-yazi" id="perdeYazi">harita hazırlanıyor</p>
+      </div>
+    </div>
+
+  </body>
+</html>
