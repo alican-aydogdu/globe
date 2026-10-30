@@ -95,7 +95,7 @@ export function detayKur({ kok, ilanBul, benzerBul, haritadaGoster, toast, onSil
     const satirlar = [
       ["kategori", ilan.kategori],
       ["durum", ilan.durum],
-      ["şehir", ilan.sehir],
+      ["yer", `${ilan.ilce} / ${ilan.il} · ${ilan.bolge || ""}`.trim()],
       ["yayın", ilanYasi(ilan)],
       ["ilan no", ilan.id],
       ["satıcı puanı", `${ilan.puan} / 5`],
@@ -128,7 +128,7 @@ export function detayKur({ kok, ilanBul, benzerBul, haritadaGoster, toast, onSil
       btn.querySelector("img").src = gorselUret(b, 0);
       btn.querySelector(".benzer-ad").textContent = b.baslik;
       btn.querySelector(".benzer-fiyat").textContent = `${BICIM.format(b.fiyat)} ₺`;
-      btn.querySelector(".benzer-yer").textContent = `${b.sehir} · ${b.durum}`;
+      btn.querySelector(".benzer-yer").textContent = `${b.ilce}/${b.il} · ${b.durum}`;
       btn.addEventListener("click", () => ac(b.id, { adres: true }));
       kap.appendChild(li);
     }
@@ -146,7 +146,7 @@ export function detayKur({ kok, ilanBul, benzerBul, haritadaGoster, toast, onSil
     q("[data-fiyat]").textContent = `${BICIM.format(ilan.fiyat)} ₺`;
     q("[data-aciklama]").textContent = ilan.aciklama || "Satıcı açıklama eklemedi.";
     q("[data-satici]").textContent = ilan.satici;
-    q("[data-satici-alt]").textContent = `${ilan.sehir} · ${ilanYasi(ilan)} yayında · cevap süresi ~${1 + (ilan.ilanNo % 5)} sa`;
+    q("[data-satici-alt]").textContent = `${ilan.ilce}/${ilan.il} · ${ilanYasi(ilan)} yayında · cevap süresi ~${1 + (ilan.ilanNo % 5)} sa`;
     q("[data-harf]").textContent = (ilan.satici || "?").trim().charAt(0).toUpperCase();
     q("[data-rozet]").hidden = !ilan.benim;
     q("[data-sil]").hidden = !ilan.benim;

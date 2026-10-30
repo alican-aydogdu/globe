@@ -1,5 +1,6 @@
 // İkinci el pazaryeri için örnek (kurgusal) ilan üreteci.
-// Deterministik: aynı tohum → aynı ilanlar, böylece testler tekrarlanabilir.
+// İlanlar Türkiye'nin 81 iline, ilçe sayısına göre dağıtılır; her ilan bir ilçeye düşer.
+// Deterministik: aynı veri + aynı tohum → aynı ilanlar.
 
 function mulberry32(a) {
   return function () {
@@ -13,54 +14,8 @@ function mulberry32(a) {
 
 const rnd = mulberry32(20261030);
 
-const SEHIRLER = [
-  ["İstanbul", 41.01, 28.97, 1.0],
-  ["Ankara", 39.93, 32.86, 0.52],
-  ["İzmir", 38.42, 27.14, 0.44],
-  ["Bursa", 40.19, 29.06, 0.34],
-  ["Antalya", 36.9, 30.7, 0.3],
-  ["Kocaeli", 40.85, 29.88, 0.18],
-  ["Adana", 37.0, 35.32, 0.22],
-  ["Konya", 37.87, 32.48, 0.2],
-  ["Gaziantep", 37.07, 37.38, 0.18],
-  ["Kayseri", 38.73, 35.49, 0.16],
-  ["Mersin", 36.8, 34.63, 0.16],
-  ["Eskişehir", 39.78, 30.52, 0.14],
-  ["Diyarbakır", 37.91, 40.24, 0.14],
-  ["Samsun", 41.29, 36.33, 0.13],
-  ["Denizli", 37.78, 29.09, 0.11],
-  ["Şanlıurfa", 37.16, 38.8, 0.11],
-  ["Malatya", 38.35, 38.31, 0.1],
-  ["Trabzon", 41.0, 39.72, 0.1],
-  ["Sakarya", 40.78, 30.4, 0.1],
-  ["Erzurum", 39.9, 41.27, 0.09],
-  ["Balıkesir", 39.65, 27.89, 0.09],
-  ["Manisa", 38.61, 27.43, 0.09],
-  ["Aydın", 37.85, 27.84, 0.09],
-  ["Muğla", 37.22, 28.36, 0.09],
-  ["Hatay", 36.2, 36.16, 0.09],
-  ["Tekirdağ", 40.98, 27.51, 0.09],
-  ["Kahramanmaraş", 37.58, 36.94, 0.08],
-  ["Elazığ", 38.68, 39.22, 0.08],
-  ["Van", 38.49, 43.38, 0.08],
-  ["Sivas", 39.75, 37.02, 0.07],
-  ["Zonguldak", 41.46, 31.79, 0.07],
-  ["Çanakkale", 40.15, 26.41, 0.07],
-  ["Isparta", 37.76, 30.55, 0.07],
-  ["Edirne", 41.68, 26.56, 0.06],
-  ["Rize", 41.02, 40.52, 0.06],
-  ["Ordu", 40.98, 37.88, 0.06],
-  ["Berlin", 52.52, 13.4, 0.09],
-  ["Amsterdam", 52.37, 4.9, 0.08],
-  ["Londra", 51.51, -0.13, 0.09],
-  ["Paris", 48.86, 2.35, 0.08],
-  ["Detroit", 42.33, -83.05, 0.06],
-  ["New York", 40.71, -74.01, 0.08],
-  ["Tokyo", 35.68, 139.69, 0.07],
-  ["Dubai", 25.2, 55.27, 0.06],
-  ["Bakü", 40.41, 49.87, 0.06],
-  ["Tiflis", 41.72, 44.79, 0.05],
-];
+// Büyükşehirlerde ilan yoğunluğu biraz daha yüksek (plaka kodu -> çarpan)
+const BUYUKSEHIR = { 34: 2.6, 6: 2.0, 35: 1.8, 1: 1.35, 16: 1.3, 7: 1.3, 42: 1.25, 41: 1.2 };
 
 const URUNLER = [
   ["Bisiklet", ["Trek FX 2", "Rockrider ST 540", "Carraro Sportive 227", "Giant Escape 3", "Salcano City Fun"], 3500, 46000, 5],
@@ -131,25 +86,6 @@ const ACIKLAMA_KAPANIS = [
   "Pazartesi–cumartesi 18:00 sonrası ulaşabilirsin.",
 ];
 
-function aciklamaYaz(kategori, model, durum, yas, sehir) {
-  const parcalar = [
-    `${model} (${kategori.toLocaleLowerCase("tr")}) — ${durum.toLocaleLowerCase("tr")} durumda.`,
-    ACIKLAMA_ACILIS[tamsayi(0, ACIKLAMA_ACILIS.length - 1)],
-    ACIKLAMA_ORTA[tamsayi(0, ACIKLAMA_ORTA.length - 1)],
-  ];
-  if (yas > 20) parcalar.push("İlan uzun süredir yayında, fiyatta esneklik var.");
-  parcalar.push(ACIKLAMA_KAPANIS[tamsayi(0, ACIKLAMA_KAPANIS.length - 1)]);
-  parcalar.push(`${sehir} içinde görüşüp teslim edebiliriz.`);
-  return parcalar.join(" ");
-}
-
-
-const HAVUZ = [];
-for (const u of URUNLER) for (let i = 0; i < (u[4] || 1); i++) HAVUZ.push(u);
-function agirlikliUrun() {
-  return HAVUZ[tamsayi(0, HAVUZ.length - 1)];
-}
-
 function tamsayi(min, max) {
   return Math.floor(min + rnd() * (max - min + 1));
 }
@@ -164,46 +100,85 @@ function gunOnce(gun) {
   return gun === 0 ? "bugün" : gun === 1 ? "dün" : `${gun} gün önce`;
 }
 
-export function ilanlariUret() {
+function aciklamaYaz(kategori, model, durum, yas, ilce, il) {
+  const parcalar = [
+    `${model} (${kategori.toLocaleLowerCase("tr")}) — ${durum.toLocaleLowerCase("tr")} durumda.`,
+    ACIKLAMA_ACILIS[tamsayi(0, ACIKLAMA_ACILIS.length - 1)],
+    ACIKLAMA_ORTA[tamsayi(0, ACIKLAMA_ORTA.length - 1)],
+  ];
+  if (yas > 20) parcalar.push("İlan uzun süredir yayında, fiyatta esneklik var.");
+  parcalar.push(ACIKLAMA_KAPANIS[tamsayi(0, ACIKLAMA_KAPANIS.length - 1)]);
+  parcalar.push(`${ilce}/${il} içinde görüşüp teslim edebiliriz.`);
+  return parcalar.join(" ");
+}
+
+const HAVUZ = [];
+for (const u of URUNLER) for (let i = 0; i < (u[4] || 1); i++) HAVUZ.push(u);
+
+/**
+ * @param {{iller: Array, ilceler: Array}} veri  public/veri/tr_il.json + tr_ilce.json
+ */
+export function ilanlariUret(veri) {
+  const ilceler = veri.ilceler || [];
+  const ilcelerIlBazinda = new Map();
+  for (const ilce of ilceler) {
+    if (!ilcelerIlBazinda.has(ilce.il)) ilcelerIlBazinda.set(ilce.il, []);
+    ilcelerIlBazinda.get(ilce.il).push(ilce);
+  }
+
   const ilanlar = [];
   let sayac = 0;
 
-  for (const [sehir, lat, lon, agirlik] of SEHIRLER) {
-    const adet = Math.max(10, Math.round(agirlik * 140));
+  for (const il of veri.iller || []) {
+    const yerel = ilcelerIlBazinda.get(il.ad) || [];
+    if (!yerel.length) continue;
+    const carpan = BUYUKSEHIR[il.plaka] || 1;
+    const adet = Math.max(2, Math.round(yerel.length * 1.05 * carpan));
+
     for (let i = 0; i < adet; i++) {
-      const [kategori, varyantlar, min, max] = agirlikliUrun();
+      const ilce = yerel[tamsayi(0, yerel.length - 1)];
+      const urun = HAVUZ[tamsayi(0, HAVUZ.length - 1)];
+      const [kategori, varyantlar, min, max] = urun;
       const model = varyantlar[tamsayi(0, varyantlar.length - 1)];
-      const baslik = `${model} · ${kategori}`;
+
+      // nokta ilçenin içine düşsün: ilçe sınır kutusunun küçük bir oranı kadar kaydır
+      const xs = ilce.halkalar.flatMap((h) => h.map((p) => p[0]));
+      const ys = ilce.halkalar.flatMap((h) => h.map((p) => p[1]));
+      const gw = Math.max(...xs) - Math.min(...xs);
+      const gh = Math.max(...ys) - Math.min(...ys);
+      const pay = Math.min(gw, gh) * 0.34;
+      const lat = Math.max(Math.min(...ys), Math.min(Math.max(...ys), ilce.merkez[1] + (rnd() - 0.5) * 2 * pay));
+      const lon = Math.max(Math.min(...xs), Math.min(Math.max(...xs), ilce.merkez[0] + (rnd() - 0.5) * 2 * pay));
+
       sayac += 1;
-      ilanlar.push({
+      const ilan = {
         id: `IL-${String(sayac).padStart(5, "0")}`,
-        baslik,
+        baslik: `${model} · ${kategori}`,
         kategori,
         fiyat: fiyat(min, max),
-        sehir,
-        lat: lat + (rnd() - 0.5) * 0.22,
-        lon: lon + (rnd() - 0.5) * 0.3,
+        il: il.ad,
+        ilce: ilce.ad,
+        bolge: il.bolge,
+        lat,
+        lon,
         satici: ADLAR[tamsayi(0, ADLAR.length - 1)],
         durum: DURUMLAR[tamsayi(0, DURUMLAR.length - 1)],
         yas: tamsayi(0, 45),
         puan: (3.4 + rnd() * 1.6).toFixed(1),
         ilanNo: 1000 + sayac * 7,
-        aciklama: "",
-      });
-      const son = ilanlar[ilanlar.length - 1];
-      son.aciklama = aciklamaYaz(kategori, model, son.durum, son.yas, sehir);
+      };
+      ilan.aciklama = aciklamaYaz(kategori, model, ilan.durum, ilan.yas, ilce.ad, il.ad);
+      ilanlar.push(ilan);
     }
   }
 
   ilanlar.sort((a, b) => a.yas - b.yas);
-  return { ilanlar, sehirSayisi: SEHIRLER.length };
+  return { ilanlar, ilSayisi: (veri.iller || []).length, ilceSayisi: ilceler.length };
 }
 
 export function ilanYasi(ilan) {
   return gunOnce(ilan.yas);
 }
 
-// Form ve filtre için: tüm şehirler, kategoriler, durumlar.
-export const SEHIR_LISTESI = SEHIRLER.map(([ad, lat, lon]) => [ad, lat, lon]);
 export const KATEGORILER = [...new Set(URUNLER.map((u) => u[0]))].sort((a, b) => a.localeCompare(b, "tr"));
 export const DURUM_LISTESI = [...DURUMLAR];

@@ -4,7 +4,7 @@ import { fotografiKucult } from "./depo.js";
 
 const EN_FAZLA_FOTO = 3;
 
-export function ekleKur({ kok, sehirler, kategoriler, durumlar, varsayilanSatici, onEkle, toast }) {
+export function ekleKur({ kok, iller, ilceler, kategoriler, durumlar, varsayilanSatici, onEkle, toast }) {
   let fotolar = [];
   let acik = false;
 
@@ -53,10 +53,13 @@ export function ekleKur({ kok, sehirler, kategoriler, durumlar, varsayilanSatici
           </label>
 
           <label class="alan">
-            <span>şehir <b>*</b></span>
-            <select name="sehir">${sehirler
-              .map((s) => `<option value="${s[0]}">${s[0]}</option>`)
-              .join("")}</select>
+            <span>il <b>*</b></span>
+            <select name="il">${iller.map((i) => `<option value="${i.ad}">${i.ad}</option>`).join("")}</select>
+          </label>
+
+          <label class="alan">
+            <span>ilçe <b>*</b></span>
+            <select name="ilce" data-ilce></select>
           </label>
 
           <label class="alan alan--genis">
@@ -89,6 +92,25 @@ export function ekleKur({ kok, sehirler, kategoriler, durumlar, varsayilanSatici
   const aciklama = form.elements.aciklama;
   const sayac = kok.querySelector("[data-sayac]");
   const gonder = kok.querySelector("[data-gonder]");
+  const ilSecim = form.elements.il;
+  const ilceSecim = form.elements.ilce;
+
+  // il değişince ilçe listesini tazele
+  function ilceleriDoldur(ilAd, secili) {
+    const yerel = ilceler.filter((i) => i.il === ilAd).sort((a, b) => a.ad.localeCompare(b.ad, "tr"));
+    ilceSecim.replaceChildren(
+      ...yerel.map((i) => {
+        const o = document.createElement("option");
+        o.value = i.ad;
+        o.textContent = i.ad;
+        return o;
+      })
+    );
+    ilceSecim.disabled = yerel.length === 0;
+    if (secili && yerel.some((i) => i.ad === secili)) ilceSecim.value = secili;
+  }
+  ilSecim.addEventListener("change", () => ilceleriDoldur(ilSecim.value));
+  ilceleriDoldur(ilSecim.value);
 
   function hataGoster(mesaj) {
     hata.textContent = mesaj;
@@ -159,23 +181,27 @@ export function ekleKur({ kok, sehirler, kategoriler, durumlar, varsayilanSatici
     const baslik = form.elements.baslik.value.trim();
     const fiyat = Math.round(Number(form.elements.fiyat.value));
     const kategori = form.elements.kategori.value;
-    const sehir = form.elements.sehir.value;
+    const il = form.elements.il.value;
+    const ilce = form.elements.ilce.value;
 
     if (baslik.length < 5) return hataGoster("başlık en az 5 karakter olmalı");
     if (!Number.isFinite(fiyat) || fiyat <= 0) return hataGoster("geçerli bir fiyat gir");
     if (fiyat > 900000) return hataGoster("fiyat 900.000 ₺ üstü olamaz");
     if (!kategori) return hataGoster("kategori seç");
-    if (!sehir) return hataGoster("şehir seç");
+    if (!il) return hataGoster("il seç");
+    if (!ilce) return hataGoster("ilçe seç");
 
-    const sehirSatiri = sehirler.find((s) => s[0] === sehir);
+    const ilceSatiri = ilceler.find((i) => i.il === il && i.ad === ilce);
     const ilan = {
       id: `IL-K-${String(Date.now()).slice(-6)}`,
       baslik,
       kategori,
       fiyat,
-      sehir,
-      lat: sehirSatiri ? sehirSatiri[1] : 39,
-      lon: sehirSatiri ? sehirSatiri[2] : 35,
+      il,
+      ilce,
+      bolge: iller.find((i) => i.ad === il)?.bolge || "",
+      lat: ilceSatiri ? ilceSatiri.merkez[1] : 39,
+      lon: ilceSatiri ? ilceSatiri.merkez[0] : 35,
       satici: form.elements.satici.value.trim() || varsayilanSatici,
       durum: form.elements.durum.value,
       aciklama: form.elements.aciklama.value.trim(),
@@ -189,7 +215,7 @@ export function ekleKur({ kok, sehirler, kategoriler, durumlar, varsayilanSatici
     gonder.disabled = true;
     try {
       onEkle(ilan);
-      toast("ilanın yayında", `${ilan.baslik} · ${sehir}`);
+      toast("ilanın yayında", `${ilan.baslik} · ${ilce}/${il}`);
       kapat(false);
     } catch {
       hataGoster("ilan kaydedilemedi — tarayıcı depolaması dolu olabilir");
@@ -225,6 +251,7 @@ export function ekleKur({ kok, sehirler, kategoriler, durumlar, varsayilanSatici
     fotolar = [];
     fotoListeCiz();
     form.reset();
+    ilceleriDoldur(ilSecim.value);
     form.elements.satici.value = varsayilanSatici;
     sayac.textContent = "0 / 400";
   }

@@ -25,16 +25,116 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-#sahne {
+/* ——— Türkiye haritası ——— */
+.harita {
   position: fixed;
   inset: 0;
+  background:
+    radial-gradient(120% 90% at 50% 0%, #0b1a28 0%, #060d16 45%, #04070d 100%),
+    #04070d;
+  cursor: grab;
+  touch-action: none;
 }
 
-#sahne canvas {
+.harita svg {
   display: block;
   width: 100%;
   height: 100%;
   touch-action: none;
+  outline: none;
+}
+
+.harita svg.tutuluyor {
+  cursor: grabbing;
+}
+
+.il-yol {
+  stroke: none;
+  transition: fill 0.35s ease, filter 0.15s ease;
+  cursor: pointer;
+}
+
+.il-yol:hover {
+  filter: brightness(1.3) saturate(1.1);
+}
+
+.il-yol[data-secili="1"] {
+  filter: brightness(1.22);
+}
+
+.ilce-yol {
+  stroke: none;
+  transition: fill 0.3s ease, filter 0.15s ease;
+  cursor: pointer;
+}
+
+.ilce-yol:hover {
+  filter: brightness(1.35);
+}
+
+.ilce-yol[data-secili="1"] {
+  filter: brightness(1.5);
+}
+
+.il-sinir,
+.ilce-sinir {
+  fill: none;
+  pointer-events: none;
+  vector-effect: non-scaling-stroke;
+}
+
+.il-sinir {
+  stroke: rgba(6, 11, 18, 0.85);
+  stroke-width: 1.1;
+}
+
+.ilce-sinir {
+  stroke: rgba(6, 11, 18, 0.6);
+  stroke-width: 0.6;
+}
+
+.h-etiket {
+  pointer-events: none;
+  font-family: var(--mono);
+  fill: #dfe7f0;
+  paint-order: stroke;
+  stroke: rgba(3, 7, 12, 0.85);
+  letter-spacing: 0.01em;
+}
+
+.h-etiket--il {
+  font-size: var(--etiket-boy, 1px);
+  stroke-width: calc(var(--etiket-boy, 1px) * 0.22);
+  font-weight: 500;
+}
+
+.h-etiket--ilce {
+  font-size: var(--etiket-boy-ilce, 1px);
+  stroke-width: calc(var(--etiket-boy-ilce, 1px) * 0.2);
+  fill: #b9c6d4;
+}
+
+.h-etiket[data-bos="1"] {
+  opacity: 0.45;
+}
+
+.nokta {
+  fill: var(--vurgu);
+  stroke: rgba(4, 8, 14, 0.9);
+  vector-effect: non-scaling-stroke;
+  stroke-width: 1;
+  cursor: pointer;
+  transition: r 0.15s ease;
+}
+
+.nokta--benim {
+  fill: #7fd8a8;
+}
+
+.nokta[data-secilmis="1"] {
+  fill: #fff2d6;
+  stroke: var(--vurgu);
+  stroke-width: 2;
 }
 
 .hud {
@@ -272,7 +372,11 @@ body {
 .ilan-kart {
   position: fixed;
   z-index: 6;
+  left: clamp(16px, 3vw, 34px);
+  bottom: 166px;
   width: 268px;
+  max-height: min(44vh, 380px);
+  overflow: auto;
   padding: 10px 12px 8px;
   border: 1px solid rgba(255, 180, 84, 0.38);
   border-left: 2px solid var(--vurgu, #ffb454);
@@ -1637,5 +1741,244 @@ body {
   .gorsel-ok,
   .benzer-dugme {
     transition: none;
+  }
+}
+
+
+/* ——— korokromatik panel ——— */
+.korokrom {
+  position: fixed;
+  z-index: 4;
+  right: clamp(14px, 3vw, 30px);
+  bottom: 96px;
+  width: 210px;
+  padding: 10px 12px 11px;
+  border: 1px solid var(--cizgi);
+  border-radius: 12px;
+  background: rgba(7, 16, 26, 0.82);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.42);
+}
+
+.korokrom-bas {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.korokrom-etiket {
+  font-size: 0.6rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--sonuk);
+}
+
+.modlar {
+  display: flex;
+  gap: 2px;
+  padding: 2px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.modlar button {
+  border: 0;
+  background: none;
+  color: var(--sonuk);
+  font-family: var(--mono);
+  font-size: 0.64rem;
+  letter-spacing: 0.04em;
+  padding: 3px 7px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 0.16s ease, color 0.16s ease;
+}
+
+.modlar button:hover {
+  color: var(--metin);
+}
+
+.modlar button[aria-pressed="true"] {
+  background: var(--vurgu);
+  color: #1a1206;
+  font-weight: 600;
+}
+
+.efsane {
+  margin-top: 9px;
+}
+
+.efsane-bas {
+  margin: 0 0 5px;
+  font-size: 0.6rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--sonuk);
+}
+
+.efsane-liste {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 3px 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.efsane-liste li {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.62rem;
+  color: #c3cdd8;
+  white-space: nowrap;
+}
+
+.efsane-liste i {
+  flex: none;
+  width: 9px;
+  height: 9px;
+  border-radius: 2px;
+}
+
+.efsane-serit {
+  display: flex;
+  height: 8px;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.efsane-serit i {
+  flex: 1;
+}
+
+.efsane-uc {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 4px;
+  font-size: 0.6rem;
+  color: var(--sonuk);
+}
+
+/* ——— harita kontrolleri ——— */
+.harita-kontroller {
+  position: fixed;
+  z-index: 4;
+  right: clamp(14px, 3vw, 30px);
+  top: 118px;
+  display: grid;
+  gap: 6px;
+}
+
+.harita-kontroller button {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--cizgi);
+  border-radius: 9px;
+  background: rgba(7, 16, 26, 0.82);
+  backdrop-filter: blur(8px);
+  color: var(--metin);
+  font-family: var(--mono);
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: border-color 0.16s ease, color 0.16s ease, transform 0.12s ease;
+}
+
+.harita-kontroller button:hover {
+  border-color: rgba(255, 180, 84, 0.55);
+  color: var(--vurgu);
+}
+
+.harita-kontroller button:active {
+  transform: scale(0.94);
+}
+
+/* ——— kırıntı ——— */
+.kirinti {
+  position: fixed;
+  z-index: 4;
+  left: clamp(16px, 3vw, 34px);
+  top: clamp(88px, 12vh, 112px);
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px 6px;
+  border: 1px solid rgba(232, 234, 239, 0.09);
+  border-radius: 8px;
+  background: rgba(7, 16, 26, 0.66);
+  backdrop-filter: blur(8px);
+}
+
+.kirinti[hidden] {
+  display: none;
+}
+
+.kirinti button {
+  border: 0;
+  background: none;
+  color: var(--sonuk);
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.04em;
+  padding: 2px 5px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.kirinti button:hover {
+  color: var(--metin);
+}
+
+.kirinti button[data-son="1"] {
+  color: var(--vurgu);
+}
+
+.kirinti-ayrac {
+  color: rgba(232, 234, 239, 0.3);
+  font-size: 0.7rem;
+}
+
+@media (max-width: 720px) {
+  .harita-kontroller {
+    right: 10px;
+    top: auto;
+    bottom: 218px;
+    grid-auto-flow: row;
+  }
+
+  .harita-kontroller button {
+    width: 30px;
+    height: 30px;
+    font-size: 0.9rem;
+  }
+
+  .korokrom {
+    right: 10px;
+    left: 10px;
+    width: auto;
+    bottom: 168px;
+    padding: 8px 10px;
+  }
+
+  .efsane {
+    display: none;
+  }
+
+  .kirinti {
+    left: 10px;
+    top: 96px;
+    font-size: 0.66rem;
+  }
+
+  .ilan-kart {
+    left: 10px;
+    right: 10px;
+    width: auto;
+    bottom: 218px;
+    max-height: 42vh;
   }
 }
