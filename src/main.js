@@ -11,8 +11,13 @@ import {
   koordinatVektor,
   kimlikHaritasi,
 } from "./sembol.js";
-import { ilanlariUret } from "./ilanlar.js";
+import { ilanlariUret, SEHIR_LISTESI, KATEGORILER, DURUM_LISTESI } from "./ilanlar.js";
 import { pazarKatmani } from "./pazaryeri.js";
+import { filtreKur } from "./filtre.js";
+import { detayKur, adrestenIlanId } from "./detay.js";
+import { ekleKur } from "./ekle.js";
+import { yerelIlanlariOku, yerelIlanEkle, yerelIlanSil } from "./depo.js";
+import { gorselUret } from "./gorsel.js";
 
 const YARICAP = 1;
 const taban = import.meta.env.BASE_URL;
@@ -107,7 +112,15 @@ for (let i = 0; i < sehirler.length; i++) {
 }
 
 // ——— ilan katmanı ———
-const { ilanlar } = ilanlariUret();
+const { ilanlar: uzakIlanlar } = ilanlariUret();
+let kendiIlanlar = yerelIlanlariOku().map((i) => ({
+  ...i,
+  benim: true,
+  fotolar: Array.isArray(i.fotolar) ? i.fotolar : [],
+}));
+let ilanlar = [...kendiIlanlar, ...uzakIlanlar];
+let ilanHaritasi = new Map(ilanlar.map((i) => [i.id, i]));
+
 const pazar = pazarKatmani();
 pazar.malzeme.uniforms.uBoyut.value = 8.5 * dpr;
 sahne.add(pazar.nokta);
@@ -120,18 +133,139 @@ const kartSehir = document.querySelector("#kartSehir");
 const kartAdet = document.querySelector("#kartAdet");
 const kartListe = document.querySelector("#kartListe");
 const kartAlt = document.querySelector("#kartAlt");
+const filtreTemizle = document.querySelector("#filtreTemizle");
+const filtreDurum = document.querySelector("#filtreDurum");
+const detayKok = document.querySelector("#detay");
+const ekleKok = document.querySelector("#ekle");
+const toastKutu = document.querySelector("#toast");
+const toastBaslik = document.querySelector("#toastBaslik");
+const toastAlt = document.querySelector("#toastAlt");
 
 const fiyatBicim = new Intl.NumberFormat("tr-TR", { maximumFractionDigits: 0 });
 let aramaMetni = "";
 let kartIli = null;
+let suzgec = () => true;
+
+// ——— bildirim ———
+let toastZaman = 0;
+function toast(baslik, alt = "") {
+  toastBaslik.textContent = baslik;
+  toastAlt.textContent = alt;
+  toastAlt.hidden = !alt;
+  toastKutu.hidden = false;
+  requestAnimationFrame(() => (toastKutu.dataset.acik = "1"));
+  clearTimeout(toastZaman);
+  toastZaman = setTimeout(() => {
+    delete toastKutu.dataset.acik;
+    setTimeout(() => {
+      if (!toastKutu.dataset.acik) toastKutu.hidden = true;
+    }, 260);
+  }, 3200);
+  window.__sonToast = { baslik, alt, zaman: Date.now() };
+}
+
+// ——— kamera uçuşu ———
+let ucus = null;
+let ucusZaman = 0;
+
+function ucusBitir() {
+  if (!ucus) return;
+  kamera.position.copy(ucus.hedef);
+  ucus = null;
+  kontroller.enabled = true;
+  sonEtkilesim = performance.now();
+}
+
+function ucusYap(lon, lat, mesafe = 1.62) {
+  ucus = {
+    bas: performance.now(),
+    sure: 1150,
+    baslangicKonum: kamera.position.clone(),
+    hedef: koordinatVektor(lon, lat, mesafe),
+  };
+  kontroller.autoRotate = false;
+  kontroller.enabled = false;
+  // sekme arka plana düşerse animasyon yarıda kalmasın
+  clearTimeout(ucusZaman);
+  ucusZaman = setTimeout(ucusBitir, 1150 + 400);
+}
+
+// ——— filtreler ———
+const filtre = filtreKur({
+  kategoriKok: document.querySelector("#filtreKategoriler"),
+  fiyatKok: document.querySelector("#filtreFiyat"),
+  ilanlar,
+  onChange: () => {
+    filtreTemizle.hidden = !filtre.aktifMi();
+    filtreDurum.textContent = filtre.aktifMi()
+      ? `${filtre.durum.secili.size ? [...filtre.durum.secili].join(", ") : "tüm kategoriler"} · ${fiyatBicim.format(filtre.durum.min)}–${fiyatBicim.format(filtre.durum.max)} ₺`
+      : "tüm ilanlar";
+    ilanlariGrupla();
+  },
+});
+suzgec = (ilan) => filtre.suz(ilan);
+filtreTemizle.addEventListener("click", () => filtre.sifirla());
+
+// ——— detay sayfası ———
+const detay = detayKur({
+  kok: detayKok,
+  ilanBul: (id) => ilanHaritasi.get(id),
+  benzerBul: (ilan, adet) => {
+    const ayniSehir = [];
+    const ayniKategori = [];
+    for (const i of ilanlar) {
+      if (i.id === ilan.id) continue;
+      if (i.kategori !== ilan.kategori) continue;
+      (i.sehir === ilan.sehir ? ayniSehir : ayniKategori).push(i);
+    }
+    return [...ayniSehir, ...ayniKategori].slice(0, adet);
+  },
+  haritadaGoster: (ilan) => {
+    ucusYap(ilan.lon, ilan.lat, 1.42);
+    toast("haritada", `${ilan.sehir} · ${ilan.baslik}`);
+  },
+  toast,
+  onSil: (id) => {
+    yerelIlanSil(id);
+    kendiIlanlar = kendiIlanlar.filter((i) => i.id !== id);
+    veriyiYenile();
+  },
+});
+
+// ——— ilan ekleme ———
+const ekle = ekleKur({
+  kok: ekleKok,
+  sehirler: SEHIR_LISTESI,
+  kategoriler: KATEGORILER,
+  durumlar: DURUM_LISTESI,
+  varsayilanSatici: "Ali Can",
+  onEkle: (ilan) => {
+    yerelIlanEkle(ilan);
+    kendiIlanlar = [{ ...ilan, benim: true }, ...kendiIlanlar];
+    veriyiYenile();
+    ucusYap(ilan.lon, ilan.lat, 1.5);
+    setTimeout(() => detay.ac(ilan.id, { adres: true }), 900);
+  },
+  toast,
+});
+
+document.querySelector("#ilanVer").addEventListener("click", () => ekle.ac());
+
+function veriyiYenile() {
+  ilanlar = [...kendiIlanlar, ...uzakIlanlar];
+  ilanHaritasi = new Map(ilanlar.map((i) => [i.id, i]));
+  ilanlariGrupla();
+}
 
 function ilanlariGrupla() {
   const q = aramaMetni.trim().toLocaleLowerCase("tr");
-  const suzulen = q
-    ? ilanlar.filter((i) =>
-        `${i.baslik} ${i.kategori} ${i.sehir} ${i.satici}`.toLocaleLowerCase("tr").includes(q)
-      )
-    : ilanlar;
+  const suzulen = ilanlar.filter((i) => {
+    if (!suzgec(i)) return false;
+    if (!q) return true;
+    return `${i.baslik} ${i.kategori} ${i.sehir} ${i.satici}`
+      .toLocaleLowerCase("tr")
+      .includes(q);
+  });
 
   const gruplar = new Map();
   for (const ilan of suzulen) {
@@ -149,7 +283,8 @@ function ilanlariGrupla() {
   for (const g of iller) {
     g.lat /= g.ilanlar.length;
     g.lon /= g.ilanlar.length;
-    g.ilanlar.sort((a, b) => a.yas - b.yas);
+    g.ilanlar.sort((a, b) => (b.benim ? 1 : 0) - (a.benim ? 1 : 0) || a.yas - b.yas);
+    g.benim = g.ilanlar.some((i) => i.benim);
   }
   iller.sort((a, b) => b.ilanlar.length - a.ilanlar.length);
 
@@ -158,6 +293,8 @@ function ilanlariGrupla() {
   pazarNot.textContent = q
     ? `“${aramaMetni.trim()}” · ${iller.length} şehir`
     : `${fiyatBicim.format(suzulen.length)} ilan · ${iller.length} şehir`;
+  durum.textContent = suzulen.length ? `${fiyatBicim.format(suzulen.length)} ilan` : "sonuç yok";
+  durum.dataset.hazir = suzulen.length ? "1" : "0";
   kartKapat_();
   return iller;
 }
@@ -178,24 +315,41 @@ function kartAc(i, x, y) {
   kartAdet.textContent = `${fiyatBicim.format(il.ilanlar.length)} ilan`;
   kartListe.replaceChildren();
 
-  for (const ilan of il.ilanlar.slice(0, 3)) {
+  const SINIR = 40;
+  for (const ilan of il.ilanlar.slice(0, SINIR)) {
     const li = document.createElement("li");
     li.className = "kart-satir";
-    li.innerHTML = `
-      <span class="kart-baslik"></span>
-      <span class="kart-fiyat"></span>
-      <span class="kart-meta"></span>`;
-    li.querySelector(".kart-baslik").textContent = ilan.baslik;
-    li.querySelector(".kart-fiyat").textContent = `${fiyatBicim.format(ilan.fiyat)} ₺`;
-    li.querySelector(".kart-meta").textContent = `${ilan.satici} · ${ilan.durum}`;
+    li.dataset.benim = ilan.benim ? "1" : "0";
+
+    const dugme = document.createElement("button");
+    dugme.type = "button";
+    dugme.className = "kart-dugme";
+    dugme.innerHTML = `
+      <img class="kart-foto" alt="" loading="lazy" />
+      <span class="kart-metin">
+        <span class="kart-baslik"></span>
+        <span class="kart-meta"></span>
+      </span>
+      <span class="kart-fiyat"></span>`;
+
+    dugme.querySelector(".kart-foto").src = gorselUret(ilan, 0);
+    dugme.querySelector(".kart-baslik").textContent = ilan.baslik;
+    dugme.querySelector(".kart-meta").textContent = `${ilan.satici} · ${ilan.durum} · ${ilan.benim ? "senin ilanın" : `IL-${ilan.id.split("-").pop()}`}`;
+    dugme.querySelector(".kart-fiyat").textContent = `${fiyatBicim.format(ilan.fiyat)} ₺`;
+    dugme.addEventListener("click", () => {
+      kartKapat_();
+      detay.ac(ilan.id, { adres: true });
+    });
+
+    li.appendChild(dugme);
     kartListe.appendChild(li);
   }
 
-  const kalan = il.ilanlar.length - Math.min(3, il.ilanlar.length);
-  kartAlt.textContent = kalan > 0 ? `+${fiyatBicim.format(kalan)} ilan daha` : "";
+  const kalan = il.ilanlar.length - Math.min(SINIR, il.ilanlar.length);
+  kartAlt.textContent = kalan > 0 ? `+${fiyatBicim.format(kalan)} ilan daha var` : "";
 
   kart.hidden = false;
-  const gen = 268;
+  const gen = kart.offsetWidth;
   const sol = Math.max(12, Math.min(x - gen / 2, innerWidth - gen - 12));
   const ust = Math.max(12, Math.min(y - 18, innerHeight - kart.offsetHeight - 12));
   kart.style.left = `${sol}px`;
@@ -220,6 +374,16 @@ document.querySelector("#aramaForm").addEventListener("submit", (e) => {
 
 ilanlariGrupla();
 
+// doğrudan bağlantı: #/ilan/IL-00042 · #/ilan-ekle
+const adrestekiIlan = adrestenIlanId();
+if (adrestekiIlan) {
+  setTimeout(() => {
+    if (!detay.ac(adrestekiIlan)) toast("ilan bulunamadı", adrestekiIlan);
+  }, 420);
+} else if (location.hash === "#/ilan-ekle") {
+  setTimeout(() => ekle.ac(), 420);
+}
+
 sahne.add(atmosfer(YARICAP));
 const yildizlar = yildizAlani();
 sahne.add(yildizlar);
@@ -230,7 +394,7 @@ let hazirMi = false;
 function hazir() {
   if (hazirMi) return;
   hazirMi = true;
-  durum.textContent = "hazır";
+  durum.textContent = `${fiyatBicim.format(ilanlar.length)} ilan`;
   durum.dataset.hazir = "1";
   cubuk.style.width = "100%";
   perde.hidden = true;
@@ -351,7 +515,7 @@ function ipucuGizle() {
 function secimiTemizle() {
   ipucuGizle();
   if (kartIli === null) pazar.malzeme.uniforms.uSecili.value = -1;
-  durum.textContent = "hazır";
+  durum.textContent = `${fiyatBicim.format(pazar.iller.reduce((t, il) => t + il.ilanlar.length, 0))} ilan`;
   if (ulkeMalzeme.userData.shader) ulkeMalzeme.userData.shader.uniforms.uSecili.value = -1;
   seciliSehir = -1;
 }
@@ -473,6 +637,26 @@ const atmosferMesh = sahne.children.find((c) => c.material?.uniforms?.uKamera);
 function dongu() {
   yildizlar.material.uniforms.uZaman.value = saat.getElapsedTime();
 
+  // ——— ilana uçuş (slerp: yay üzerinden) ———
+  if (ucus) {
+    const t = Math.min(1, (performance.now() - ucus.bas) / ucus.sure);
+    const e = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+    const bas = ucus.baslangicKonum.clone().normalize();
+    const son = ucus.hedef.clone().normalize();
+    const yon = bas.clone().lerp(son, e);
+    if (yon.lengthSq() < 1e-6) yon.copy(son);
+    yon.normalize();
+    const yaricap = ucus.baslangicKonum.length() + (ucus.hedef.length() - ucus.baslangicKonum.length()) * e;
+    kamera.position.copy(yon.multiplyScalar(yaricap));
+    kontroller.target.set(0, 0, 0);
+    kontroller.update();
+    esikGuncelle();
+    if (t >= 1) {
+      ucusBitir();
+      clearTimeout(ucusZaman);
+    }
+  }
+
   if (!kontroller.autoRotate && !azHareket && performance.now() - sonEtkilesim > 6000) {
     kontroller.autoRotate = true;
   }
@@ -519,7 +703,20 @@ window.__kure = {
   sehirMat,
   kimlik,
   pazar,
-  ilanlar,
+  get ilanlar() {
+    return ilanlar;
+  },
+  get kendiIlanlar() {
+    return kendiIlanlar;
+  },
+  filtre,
+  detay,
+  ekle,
+  ucusYap,
+  toast,
+  gorselUret,
+  ilanBul: (id) => ilanHaritasi.get(id),
+  veriyiYenile,
   aramaYap(q) {
     aramaGirdi.value = q;
     aramaMetni = q;

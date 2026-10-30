@@ -9,6 +9,7 @@ export function pazarKatmani() {
   geo.setAttribute("position", new THREE.BufferAttribute(new Float32Array(0), 3));
   geo.setAttribute("aAdet", new THREE.BufferAttribute(new Float32Array(0), 1));
   geo.setAttribute("aIdx", new THREE.BufferAttribute(new Float32Array(0), 1));
+  geo.setAttribute("aBenim", new THREE.BufferAttribute(new Float32Array(0), 1));
   geo.boundingSphere = new THREE.Sphere(new THREE.Vector3(), 2);
 
   const mat = new THREE.ShaderMaterial({
@@ -23,21 +24,24 @@ export function pazarKatmani() {
     vertexShader: /* glsl */ `
       attribute float aAdet;
       attribute float aIdx;
+      attribute float aBenim;
       uniform float uEsik;
       uniform float uBoyut;
       uniform float uSecili;
       varying float vAdet;
       varying float vSecili;
+      varying float vBenim;
 
       void main() {
         vAdet = aAdet;
         vSecili = step(abs(aIdx - uSecili), 0.5);
+        vBenim = aBenim;
         vec4 mv = modelViewMatrix * vec4(position, 1.0);
         gl_Position = projectionMatrix * mv;
         // ufkun arkasındaki noktalar kürenin içinden görünmesin
         float onde = step(1.0 / length(cameraPosition) + 0.015, dot(normalize(position), normalize(cameraPosition)));
         float gorunur = step(uEsik, aAdet) * onde;
-        float boy = uBoyut * (0.85 + sqrt(aAdet) * 0.26) * (1.0 + vSecili * 0.35);
+        float boy = uBoyut * (0.85 + sqrt(aAdet) * 0.26) * (1.0 + vSecili * 0.35) * (1.0 + aBenim * 0.22);
         gl_PointSize = gorunur * min(boy, 46.0);
       }
     `,
@@ -47,6 +51,7 @@ export function pazarKatmani() {
       uniform float uZaman;
       varying float vAdet;
       varying float vSecili;
+      varying float vBenim;
 
       void main() {
         vec2 d = gl_PointCoord - vec2(0.5);
@@ -55,11 +60,14 @@ export function pazarKatmani() {
 
         // dış halka + iç dolgu: harita işareti görünümü
         float halka = smoothstep(1.0, 0.90, r) * smoothstep(0.62, 0.70, r);
+        float disHalka = vBenim * smoothstep(1.0, 0.94, r) * smoothstep(0.86, 0.90, r);
         float dolgu = smoothstep(0.56, 0.46, r);
-        float nabiz = 0.75 + 0.25 * sin(uZaman * 2.2 + vAdet);
+        float nabiz = 0.75 + 0.25 * sin(uZaman * (2.2 + vBenim * 1.5) + vAdet);
 
-        vec3 renk = mix(uRenk, uCekirdek, dolgu);
+        vec3 halkaRenk = mix(uRenk, uCekirdek, vBenim * 0.85);
+        vec3 renk = mix(halkaRenk, uCekirdek, dolgu);
         float alfa = max(halka * 0.85 * nabiz, dolgu);
+        alfa = max(alfa, disHalka * 0.9 * nabiz);
         alfa *= 1.0 + vSecili * 0.25;
         gl_FragColor = vec4(renk, min(alfa, 1.0));
         #include <colorspace_fragment>
@@ -82,17 +90,20 @@ export function pazarKatmani() {
     const poz = new Float32Array(n * 3);
     const adet = new Float32Array(n);
     const idx = new Float32Array(n);
+    const benim = new Float32Array(n);
 
     iller.forEach((il, i) => {
       const p = koordinatVektor(il.lon, il.lat, 1.006);
       poz.set([p.x, p.y, p.z], i * 3);
       adet[i] = il.ilanlar.length;
       idx[i] = i;
+      benim[i] = il.benim ? 1 : 0;
     });
 
     geo.setAttribute("position", new THREE.BufferAttribute(poz, 3));
     geo.setAttribute("aAdet", new THREE.BufferAttribute(adet, 1));
     geo.setAttribute("aIdx", new THREE.BufferAttribute(idx, 1));
+    geo.setAttribute("aBenim", new THREE.BufferAttribute(benim, 1));
     geo.attributes.position.needsUpdate = true;
     geo.computeBoundingSphere();
   }

@@ -22,7 +22,7 @@
 
     <div class="hud hud--ust">
       <div class="baslik">
-        <span class="etiket">İKİNCİ EL PAZARYERİ · v0.3</span>
+        <span class="etiket">İKİNCİ EL PAZARYERİ · v0.4</span>
         <h1>Dünya Pazarı</h1>
       </div>
       <form class="arama" id="aramaForm" role="search">
@@ -40,10 +40,27 @@
       <div class="durum" id="durum" role="status" aria-live="polite">yükleniyor</div>
     </div>
 
+    <div class="filtre" id="filtre" aria-label="İlan filtreleri">
+      <div class="filtre-satir">
+        <div class="filtre-kategoriler" id="filtreKategoriler"></div>
+        <div class="filtre-fiyat" id="filtreFiyat"></div>
+      </div>
+      <div class="filtre-alt">
+        <span class="filtre-durum" id="filtreDurum">tüm ilanlar</span>
+        <button class="filtre-temizle" id="filtreTemizle" type="button" hidden>filtreleri temizle</button>
+      </div>
+    </div>
+
     <div class="hud hud--alt">
       <p class="ipucu" id="ipucu">sürükle: döndür · tekerlek: yakınlaş · üzerine gel: isim</p>
       <p class="koordinat" id="koordinat">—</p>
       <p class="pazar-not" id="pazarNot">—</p>
+    </div>
+
+    <div class="eylem-cubugu">
+      <button class="ilan-ver" id="ilanVer" type="button">
+        <span aria-hidden="true">＋</span> ilan ver
+      </button>
     </div>
 
     <div class="ilan-kart" id="ilanKart" hidden aria-live="polite">
@@ -68,6 +85,14 @@
         <p class="perde-yazi" id="perdeYazi">harita hazırlanıyor</p>
       </div>
     </div>
+
+    <div class="toast" id="toast" role="status" aria-live="polite" hidden>
+      <b id="toastBaslik"></b>
+      <span id="toastAlt"></span>
+    </div>
+
+    <section class="detay" id="detay" hidden aria-label="İlan detayı"></section>
+    <div class="ekle" id="ekle" hidden aria-label="İlan ekle"></div>
 
     <script type="module" src="/src/main.js"></script>
   </body>

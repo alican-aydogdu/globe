@@ -9,14 +9,31 @@ her ülke kendi dolgusu ve sınırıyla, şehirler ilan sayısına göre büyüy
 ## Yapı
 
 ```
-index.html            HUD, arama kutusu, ilan kartı
-src/main.js           sahne, kamera, hover, arama, kart
+index.html            HUD, arama, filtre çubuğu, detay paneli, ilan formu
+src/main.js           sahne, kamera, hover, arama, kart, filtre/detay bağlantısı
 src/sembol.js         ülke/şehir geometrisi, kimlik haritası (hover için raster)
 src/pazaryeri.js      ilan noktaları (shader) + ekran uzayı isabet testi
 src/ilanlar.js        kurgusal ilan/satıcı üreteci (deterministik)
+src/filtre.js         kategori çipleri + fiyat aralığı
+src/detay.js          ilan detay sayfası (#/ilan/<id>) + galeri
+src/ekle.js           ilan verme formu (#/ilan-ekle)
+src/gorsel.js         ilan fotoğrafları: kategoriye göre üretilen SVG
+src/depo.js           kendi ilanların (localStorage) + fotoğraf küçültme
 public/veri/          Natural Earth GeoJSON + üretilmiş ulkeler.json / sehirler.json
 tools/veri_hazirla.py GeoJSON -> JSON (sadeleştirme, Türkçe adlar)
 ```
+
+## Özellikler
+
+- **İlan detay sayfası** — şehir kartındaki satıra tıkla; sağdan açılan panelde
+  görsel galerisi (kendi fotoğrafın + üretilen 3 kare), künye, açıklama, satıcı,
+  benzer ilanlar. Adres çubuğu `#/ilan/<id>` olur, bağlantı paylaşılabilir.
+  "haritada göster" kamerayı o şehre uçurur.
+- **Kategori + fiyat filtresi** — sol alttaki çiplerden çoklu kategori, fiyat
+  açılırında çift aralıklı sürgü + kısayollar. Harita ve kart aynı süzgeci kullanır.
+- **İlan ver** — sağ alttaki düğme. Fotoğraf (en fazla 3, tarayıcıda küçültülür),
+  başlık/kategori/fiyat/şehir/durum/açıklama. Kayıt `localStorage`'da tutulur,
+  yalnızca o tarayıcıda görünür; noktası haritada halkalı ve parlak çizilir.
 
 ## Komutlar
 

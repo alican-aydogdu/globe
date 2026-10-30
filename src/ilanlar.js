@@ -106,6 +106,44 @@ const ADLAR = [
 
 const DURUMLAR = ["Sıfır gibi", "İyi", "Orta", "Az kullanılmış", "Yenilenmiş"];
 
+const ACIKLAMA_ACILIS = [
+  "Ev değişikliği yüzünden satıyorum.",
+  "İhtiyaç fazlası, boşta duruyor.",
+  "Yükseltme yaptığım için çıkarıyorum.",
+  "Taşınma öncesi elden çıkarıyorum.",
+  "Kullanmadığım için satılık.",
+];
+
+const ACIKLAMA_ORTA = [
+  "Düzenli bakımı yapıldı, çalışır durumda.",
+  "Kozmetik olarak temiz, işlevinde sorun yok.",
+  "Tüm parçaları tam, eksik yok.",
+  "Faturalı, orijinal kutusu mevcut.",
+  "Küçük kullanım izleri var, fotoğraflarda görünüyor.",
+  "Sigara içilmeyen, evcil hayvansız evde kullanıldı.",
+];
+
+const ACIKLAMA_KAPANIS = [
+  "Pazarlık payı sınırlı. Elden teslim.",
+  "Şehir içi elden teslim, kargo alıcıya ait.",
+  "Denemek isteyen gelebilir, gündüz uygunum.",
+  "Takas düşünmüyorum, nakit tercihim.",
+  "Pazartesi–cumartesi 18:00 sonrası ulaşabilirsin.",
+];
+
+function aciklamaYaz(kategori, model, durum, yas, sehir) {
+  const parcalar = [
+    `${model} (${kategori.toLocaleLowerCase("tr")}) — ${durum.toLocaleLowerCase("tr")} durumda.`,
+    ACIKLAMA_ACILIS[tamsayi(0, ACIKLAMA_ACILIS.length - 1)],
+    ACIKLAMA_ORTA[tamsayi(0, ACIKLAMA_ORTA.length - 1)],
+  ];
+  if (yas > 20) parcalar.push("İlan uzun süredir yayında, fiyatta esneklik var.");
+  parcalar.push(ACIKLAMA_KAPANIS[tamsayi(0, ACIKLAMA_KAPANIS.length - 1)]);
+  parcalar.push(`${sehir} içinde görüşüp teslim edebiliriz.`);
+  return parcalar.join(" ");
+}
+
+
 const HAVUZ = [];
 for (const u of URUNLER) for (let i = 0; i < (u[4] || 1); i++) HAVUZ.push(u);
 function agirlikliUrun() {
@@ -150,7 +188,10 @@ export function ilanlariUret() {
         yas: tamsayi(0, 45),
         puan: (3.4 + rnd() * 1.6).toFixed(1),
         ilanNo: 1000 + sayac * 7,
+        aciklama: "",
       });
+      const son = ilanlar[ilanlar.length - 1];
+      son.aciklama = aciklamaYaz(kategori, model, son.durum, son.yas, sehir);
     }
   }
 
@@ -161,3 +202,8 @@ export function ilanlariUret() {
 export function ilanYasi(ilan) {
   return gunOnce(ilan.yas);
 }
+
+// Form ve filtre için: tüm şehirler, kategoriler, durumlar.
+export const SEHIR_LISTESI = SEHIRLER.map(([ad, lat, lon]) => [ad, lat, lon]);
+export const KATEGORILER = [...new Set(URUNLER.map((u) => u[0]))].sort((a, b) => a.localeCompare(b, "tr"));
+export const DURUM_LISTESI = [...DURUMLAR];
